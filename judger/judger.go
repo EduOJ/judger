@@ -1,8 +1,9 @@
 package judger
 
 /*
+#cgo pkg-config: libseccomp
 #cgo CFLAGS: -I../sandbox
-#cgo LDFLAGS: -L${SRCDIR}/../sandbox/output -ljudger
+#cgo LDFLAGS: ${SRCDIR}/../sandbox/output/libjudger.a -static
 #include "../sandbox/src/runner.h"
 */
 import "C"
@@ -42,7 +43,7 @@ type Result struct {
 	Result   int
 }
 
-func (c Config) ConvertToCStruct() (cc C.struct_config) {
+func (c Config) convertToCStruct() (cc C.struct_config) {
 	cc.max_cpu_time = C.int(c.MaxCPUTime)
 	cc.max_real_time = C.int(c.MaxRealTine)
 	cc.max_memory = C.long(c.MaxMemory)
@@ -67,7 +68,7 @@ func (c Config) ConvertToCStruct() (cc C.struct_config) {
 	return
 }
 
-func (r *Result) ConvertFromCStruct(cr C.struct_result) {
+func (r *Result) convertFromCStruct(cr C.struct_result) {
 	r.CPUTime = int(cr.cpu_time)
 	r.RealTime = int(cr.real_time)
 	r.Memory = int32(cr.memory)
@@ -79,8 +80,8 @@ func (r *Result) ConvertFromCStruct(cr C.struct_result) {
 
 func Run(config Config) (result Result) {
 	var cResult C.struct_result
-	cConfig := config.ConvertToCStruct()
+	cConfig := config.convertToCStruct()
 	C.run(&cConfig, &cResult)
-	result.ConvertFromCStruct(cResult)
+	result.convertFromCStruct(cResult)
 	return
 }
