@@ -17,3 +17,8 @@
 .idea
 
 *.log
+
+build/*
+
+!build/CMakeLists.txt
+

@@ -7,6 +7,6 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/output)
 set(CMAKE_C_FLAGS "-g -Wall -Werror -O3 -std=c99 -pie -fPIC")
 
 # make judger lib
-file(GLOB SOURCE "src/*.c" "src/rules/*.c")
+file(GLOB SOURCE "../sandbox/src/*.c" "../sandbox/src/rules/*.c")
 
 add_library(judger ${SOURCE})

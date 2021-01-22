@@ -3,7 +3,7 @@ package judger
 /*
 #cgo pkg-config: libseccomp
 #cgo CFLAGS: -I../sandbox
-#cgo LDFLAGS: ${SRCDIR}/../sandbox/output/libjudger.a -static
+#cgo LDFLAGS: ${SRCDIR}/../build/output/libjudger.a -static
 #include "../sandbox/src/runner.h"
 */
 import "C"
