@@ -2,7 +2,7 @@ package judger
 
 /*
 #cgo CFLAGS: -I../sandbox
-#cgo LDFLAGS: -L${SRCDIR}/../sandbox -ljudger
+#cgo LDFLAGS: -L${SRCDIR}/../sandbox/output -ljudger
 #include "../sandbox/src/runner.h"
 */
 import "C"
