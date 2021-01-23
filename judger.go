@@ -2,9 +2,9 @@ package judger
 
 /*
 #cgo pkg-config: libseccomp
-#cgo CFLAGS: -I../sandbox
-#cgo LDFLAGS: ${SRCDIR}/../build/output/libjudger.a -static
-#include "../sandbox/src/runner.h"
+#cgo CFLAGS: -I./sandbox
+#cgo LDFLAGS: ${SRCDIR}/build/output/libjudger.a -static
+#include "sandbox/src/runner.h"
 */
 import "C"
 
@@ -78,6 +78,7 @@ func (r *Result) convertFromCStruct(cr C.struct_result) {
 	r.Result = int(cr.result)
 }
 
+// Run runs the program in the sandbox according to the config and returns the result.
 func Run(config Config) (result Result) {
 	var cResult C.struct_result
 	cConfig := config.convertToCStruct()
