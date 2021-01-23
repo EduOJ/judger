@@ -21,4 +21,4 @@
 build/*
 
 !build/CMakeLists.txt
-
+!build/output

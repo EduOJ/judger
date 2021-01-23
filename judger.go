@@ -15,7 +15,7 @@ const (
 
 type Config struct {
 	MaxCPUTime           int
-	MaxRealTine          int
+	MaxRealTime          int
 	MaxMemory            int32
 	MaxStack             int32
 	MaxProcessNumber     int
@@ -45,7 +45,7 @@ type Result struct {
 
 func (c Config) convertToCStruct() (cc C.struct_config) {
 	cc.max_cpu_time = C.int(c.MaxCPUTime)
-	cc.max_real_time = C.int(c.MaxRealTine)
+	cc.max_real_time = C.int(c.MaxRealTime)
 	cc.max_memory = C.long(c.MaxMemory)
 	cc.max_stack = C.long(c.MaxStack)
 	cc.max_process_number = C.int(c.MaxProcessNumber)
