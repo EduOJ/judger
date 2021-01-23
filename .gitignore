@@ -17,8 +17,3 @@
 .idea
 
 *.log
-
-build/*
-
-!build/CMakeLists.txt
-!build/output

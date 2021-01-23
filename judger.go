@@ -11,6 +11,27 @@ const (
 	EnvMaxNumber  = 256
 )
 
+/*
+Config is a struct used to record the running configuration.
+
+MaxCPUTime (ms): max cpu time this process can cost, -1 for unlimited
+MaxRealTime (ms): max time this process can run, -1 for unlimited
+MaxMemory (byte): max size of the process' virtual memory (address space), -1 for unlimited
+MaxStack (byte): max size of the process' stack size
+MaxProcessNumber: max number of processes that can be created for the real user id of the calling process, -1 for unlimited
+MaxOutputSize (byte): max size of data this process can output to stdout, stderr and file, -1 for unlimited
+MemoryLimitCheckOnly: if this value equals 0, we will only check memory usage number, because setrlimit(maxrss) will cause some crash issues
+ExePath: path of file to run
+InputPath: redirect content of this file to process's stdin
+OutputPath: redirect process's stdout to this file
+ErrorPath: redirect process's stderr to this file
+Args (string array terminated by NULL): arguments to run this process
+Env (string array terminated by NULL): environment variables this process can get
+LongPath: judger log path
+SeccompRuleName(string or NULL): seccomp rules used to limit process system calls. Name is used to call corresponding functions.
+Uid: user to run this process
+Gid: user group this process belongs to
+*/
 type Config struct {
 	MaxCPUTime           int
 	MaxRealTime          int
@@ -31,14 +52,25 @@ type Config struct {
 	Gid                  uint32
 }
 
+/*
+Result is a struct used to record the running result.
+
+CPUTime: cpu time the process has used
+RealTime: actual running time of the process
+Memory: max value of memory used by the process
+Signal: signal number
+ExitCode: process's exit code
+Result: judger result, details in runner.h
+Error: args validation error or judger internal error, error code in runner.h
+*/
 type Result struct {
 	CPUTime  int
 	RealTime int
 	Memory   int32
 	Signal   int
 	ExitCode int
-	Error    int
 	Result   int
+	Error    int
 }
 
 func (c Config) convertToCStruct() (cc C.struct_config) {
@@ -72,8 +104,8 @@ func (r *Result) convertFromCStruct(cr C.struct_result) {
 	r.Memory = int32(cr.memory)
 	r.Signal = int(cr.signal)
 	r.ExitCode = int(cr.exit_code)
-	r.Error = int(cr.error)
 	r.Result = int(cr.result)
+	r.Error = int(cr.error)
 }
 
 // Run runs the program in the sandbox according to the config and returns the result.
