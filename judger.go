@@ -6,91 +6,77 @@ package judger
 #include "stdlib.h"
 */
 import "C"
-import "unsafe"
+import (
+	"errors"
+	"unsafe"
+)
 
 const (
 	ArgsMaxNumber = 256
 	EnvMaxNumber  = 256
 )
 
-/*
-Config is a struct used to record the running configuration.
-
-MaxCPUTime (ms): max cpu time this process can cost, -1 for unlimited
-MaxRealTime (ms): max time this process can run, -1 for unlimited
-MaxMemory (byte): max size of the process' virtual memory (address space), -1 for unlimited
-MaxStack (byte): max size of the process' stack size
-MaxProcessNumber: max number of processes that can be created for the real user id of the calling process, -1 for unlimited
-MaxOutputSize (byte): max size of data this process can output to stdout, stderr and file, -1 for unlimited
-MemoryLimitCheckOnly: if this value equals 0, we will only check memory usage number, because setrlimit(maxrss) will cause some crash issues
-ExePath: path of file to run
-InputPath: redirect content of this file to process's stdin
-OutputPath: redirect process's stdout to this file
-ErrorPath: redirect process's stderr to this file
-Args (string array terminated by NULL): arguments to run this process
-Env (string array terminated by NULL): environment variables this process can get
-LogPath: judger log path
-SeccompRuleName(string or NULL): seccomp rules used to limit process system calls. Name is used to call corresponding functions.
-Uid: user to run this process
-Gid: user group this process belongs to
-*/
+// Config is struct used to record the running configuration.
 type Config struct {
-	MaxCPUTime           int
-	MaxRealTime          int
-	MaxMemory            int32
-	MaxStack             int32
-	MaxProcessNumber     int
-	MaxOutputSize        int32
-	MemoryLimitCheckOnly int
-	ExePath              string
-	InputPath            string
-	OutputPath           string
-	ErrorPath            string
-	Args                 []string
-	Env                  []string
-	LogPath              string
-	SeccompRuleName      string
-	Uid                  uint32
-	Gid                  uint32
+	MaxCPUTime           int      // max cpu time(ms) this process can cost, -1 for unlimited
+	MaxRealTime          int      // max time(ms) this process can run, -1 for unlimited
+	MaxMemory            int32    // max size(byte) of the process' virtual memory (address space), -1 for unlimited
+	MaxStack             int32    // max size(byte) of the process' stack size
+	MaxProcessNumber     int      // max number of processes that can be created for the real user id of the calling process, -1 for unlimited
+	MaxOutputSize        int32    // max size(byte) of data this process can output to stdout, stderr and file, -1 for unlimited
+	MemoryLimitCheckOnly int      // if this value equals 0, we will only check memory usage number, because setrlimit(maxrss) will cause some crash issues
+	ExePath              string   // path of file to run
+	InputPath            string   // redirect content of this file to process's stdin
+	OutputPath           string   // redirect process's stdout to this file
+	ErrorPath            string   // redirect process's stderr to this file
+	Args                 []string // arguments to run this process
+	Env                  []string // environment variables this process can get
+	LogPath              string   // judger log path
+	SeccompRuleName      string   // seccomp rules used to limit process system calls.
+	// Name is used to call corresponding functions.
+	// Possible values are: c_cpp, c_cpp_file_io, general
+	Uid uint32 // user to run this process
+	Gid uint32 // user group this process belongs to
 }
 
-/*
-Result is a struct used to record the running result.
+type JudgeResult int
 
-CPUTime: cpu time the process has used
-RealTime: actual running time of the process
-Memory: max value of memory used by the process
-Signal: signal number
-ExitCode: process's exit code
-Result: judger result.
-SUCCESS = 0
-CPU_TIME_LIMIT_EXCEEDED=1
-REAL_TIME_LIMIT_EXCEEDED=2
-MEMORY_LIMIT_EXCEEDED=3
-RUNTIME_ERROR=4
-SYSTEM_ERROR=5
-Error: args validation error or judger internal error.
-SUCCESS = 0
-INVALID_CONFIG = -1
-FORK_FAILED = -2
-PTHREAD_FAILED = -3
-WAIT_FAILED = -4
-ROOT_REQUIRED = -5
-LOAD_SECCOMP_FAILED = -6
-SETRLIMIT_FAILED = -7
-DUP2_FAILED = -8
-SETUID_FAILED = -9
-EXECVE_FAILED = -10
-SPJ_ERROR = -11
-*/
+const (
+	SUCCESS JudgeResult = iota
+	CPU_TIME_LIMIT_EXCEEDED
+	REAL_TIME_LIMIT_EXCEEDED
+	MEMORY_LIMIT_EXCEEDED
+	RUNTIME_ERROR
+	SYSTEM_ERROR
+)
+
+// Result is a struct used to record the running result.
 type Result struct {
-	CPUTime  int
-	RealTime int
-	Memory   int32
-	Signal   int
-	ExitCode int
-	Result   int
-	Error    int
+	CPUTime  int         // cpu time the process has used
+	RealTime int         // actual running time of the process
+	Memory   int32       // max value of memory used by the process
+	Signal   int         // signal number
+	ExitCode int         // process's exit code
+	Result   JudgeResult // Judge result
+}
+
+type resultError string
+
+const (
+	ErrInvalidConfig     resultError = "invalid config"
+	ErrForkFailed        resultError = "fork failed"
+	ErrPthreadFailed     resultError = "pthread failed"
+	ErrWaitFailed        resultError = "wait failed"
+	ErrRootRequired      resultError = "root required"
+	ErrLoadSeccompFailed resultError = "load seccomp failed"
+	ErrSetRLimitFailed   resultError = "setrlimit failed"
+	ErrDup2Failed        resultError = "dup2 failed"
+	ErrSetuidFailed      resultError = "setuid failed"
+	ErrExecveFailed      resultError = "execve failed"
+)
+
+func (r resultError) Error() string {
+	return string(r)
 }
 
 func (c Config) convertToCStruct() (cc C.struct_config) {
@@ -124,15 +110,41 @@ func (r *Result) convertFromCStruct(cr C.struct_result) {
 	r.Memory = int32(cr.memory)
 	r.Signal = int(cr.signal)
 	r.ExitCode = int(cr.exit_code)
-	r.Result = int(cr.result)
-	r.Error = int(cr.error)
+	r.Result = JudgeResult(cr.result)
 }
 
 // Run runs the program in the sandbox according to the config and returns the result.
-func Run(config Config) (result Result) {
+func Run(config Config) (result Result, err error) {
 	var cResult C.struct_result
 	cConfig := config.convertToCStruct()
 	C.run(&cConfig, &cResult)
+	if cResult.error != 0 {
+		switch int(cResult.error) {
+		case -1:
+			err = ErrInvalidConfig
+		case -2:
+			err = ErrForkFailed
+		case -3:
+			err = ErrPthreadFailed
+		case -4:
+			err = ErrWaitFailed
+		case -5:
+			err = ErrRootRequired
+		case -6:
+			err = ErrLoadSeccompFailed
+		case -7:
+			err = ErrSetRLimitFailed
+		case -8:
+			err = ErrDup2Failed
+		case -9:
+			err = ErrSetuidFailed
+		case -10:
+			err = ErrExecveFailed
+		default:
+			err = errors.New("unknown error")
+		}
+		return
+	}
 	result.convertFromCStruct(cResult)
 	C.free(unsafe.Pointer(cConfig.exe_path))
 	C.free(unsafe.Pointer(cConfig.input_path))
