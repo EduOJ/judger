@@ -144,13 +144,13 @@ func Run(config Config) (result Result) {
 		if i == 0 {
 			break
 		}
-		C.free(unsafe.Pointer(i))
+		C.free(unsafe.Pointer(uintptr(i)))
 	}
 	for i := range cConfig.env {
 		if i == 0 {
 			break
 		}
-		C.free(unsafe.Pointer(i))
+		C.free(unsafe.Pointer(uintptr(i)))
 	}
 	return
 }
