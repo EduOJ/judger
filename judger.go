@@ -3,8 +3,10 @@ package judger
 /*
 #cgo pkg-config: libseccomp
 #include "seccomp_rules.h"
+#include "stdlib.h"
 */
 import "C"
+import "unsafe"
 
 const (
 	ArgsMaxNumber = 256
@@ -27,7 +29,7 @@ OutputPath: redirect process's stdout to this file
 ErrorPath: redirect process's stderr to this file
 Args (string array terminated by NULL): arguments to run this process
 Env (string array terminated by NULL): environment variables this process can get
-LongPath: judger log path
+LogPath: judger log path
 SeccompRuleName(string or NULL): seccomp rules used to limit process system calls. Name is used to call corresponding functions.
 Uid: user to run this process
 Gid: user group this process belongs to
@@ -46,7 +48,7 @@ type Config struct {
 	ErrorPath            string
 	Args                 []string
 	Env                  []string
-	LongPath             string
+	LogPath              string
 	SeccompRuleName      string
 	Uid                  uint32
 	Gid                  uint32
@@ -60,8 +62,26 @@ RealTime: actual running time of the process
 Memory: max value of memory used by the process
 Signal: signal number
 ExitCode: process's exit code
-Result: judger result, details in runner.h
-Error: args validation error or judger internal error, error code in runner.h
+Result: judger result.
+SUCCESS = 0
+CPU_TIME_LIMIT_EXCEEDED=1
+REAL_TIME_LIMIT_EXCEEDED=2
+MEMORY_LIMIT_EXCEEDED=3
+RUNTIME_ERROR=4
+SYSTEM_ERROR=5
+Error: args validation error or judger internal error.
+SUCCESS = 0
+INVALID_CONFIG = -1
+FORK_FAILED = -2
+PTHREAD_FAILED = -3
+WAIT_FAILED = -4
+ROOT_REQUIRED = -5
+LOAD_SECCOMP_FAILED = -6
+SETRLIMIT_FAILED = -7
+DUP2_FAILED = -8
+SETUID_FAILED = -9
+EXECVE_FAILED = -10
+SPJ_ERROR = -11
 */
 type Result struct {
 	CPUTime  int
@@ -85,13 +105,13 @@ func (c Config) convertToCStruct() (cc C.struct_config) {
 	cc.input_path = C.CString(c.InputPath)
 	cc.output_path = C.CString(c.OutputPath)
 	cc.error_path = C.CString(c.ErrorPath)
-	for i := 0; i < len(c.Args) && i < ArgsMaxNumber; i++ {
+	for i := 0; i < len(c.Args) && i < ArgsMaxNumber-1; i++ {
 		cc.args[i] = C.CString(c.Args[i])
 	}
-	for i := 0; i < len(c.Env) && i < EnvMaxNumber; i++ {
+	for i := 0; i < len(c.Env) && i < EnvMaxNumber-1; i++ {
 		cc.env[i] = C.CString(c.Env[i])
 	}
-	cc.log_path = C.CString(c.LongPath)
+	cc.log_path = C.CString(c.LogPath)
 	cc.seccomp_rule_name = C.CString(c.SeccompRuleName)
 	cc.uid = C.uint(c.Uid)
 	cc.gid = C.uint(c.Gid)
@@ -114,5 +134,23 @@ func Run(config Config) (result Result) {
 	cConfig := config.convertToCStruct()
 	C.run(&cConfig, &cResult)
 	result.convertFromCStruct(cResult)
+	C.free(unsafe.Pointer(cConfig.exe_path))
+	C.free(unsafe.Pointer(cConfig.input_path))
+	C.free(unsafe.Pointer(cConfig.output_path))
+	C.free(unsafe.Pointer(cConfig.error_path))
+	C.free(unsafe.Pointer(cConfig.log_path))
+	C.free(unsafe.Pointer(cConfig.seccomp_rule_name))
+	for i := range cConfig.args {
+		if i == 0 {
+			break
+		}
+		C.free(unsafe.Pointer(i))
+	}
+	for i := range cConfig.env {
+		if i == 0 {
+			break
+		}
+		C.free(unsafe.Pointer(i))
+	}
 	return
 }
