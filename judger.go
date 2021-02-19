@@ -94,9 +94,11 @@ func (c Config) convertToCStruct() (cc C.struct_config) {
 	for i := 0; i < len(c.Args) && i < ArgsMaxNumber-1; i++ {
 		cc.args[i] = C.CString(c.Args[i])
 	}
+	cc.args[len(c.Args)] = nil
 	for i := 0; i < len(c.Env) && i < EnvMaxNumber-1; i++ {
 		cc.env[i] = C.CString(c.Env[i])
 	}
+	cc.env[len(c.Env)] = nil
 	cc.log_path = C.CString(c.LogPath)
 	cc.seccomp_rule_name = C.CString(c.SeccompRuleName)
 	cc.uid = C.uint(c.Uid)
