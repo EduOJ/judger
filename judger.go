@@ -73,6 +73,7 @@ const (
 	ErrDup2Failed        resultError = "dup2 failed"
 	ErrSetuidFailed      resultError = "setuid failed"
 	ErrExecveFailed      resultError = "execve failed"
+	ErrSetOOMFailed      resultError = "set OOM failed"
 )
 
 func (r resultError) Error() string {
@@ -142,6 +143,8 @@ func Run(config Config) (result Result, err error) {
 			err = ErrSetuidFailed
 		case -10:
 			err = ErrExecveFailed
+		case -12:
+			err = ErrSetOOMFailed
 		default:
 			err = errors.New("unknown error")
 		}

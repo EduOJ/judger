@@ -125,6 +125,17 @@ void child_process(FILE *log_fp, struct config *_config) {
         }
     }
 
+    FILE* fp = fopen("/proc/self/oom_adj", "w");
+    if(!fp) {
+        CHILD_ERROR_EXIT(SET_OOM_FAILED);
+    }
+    if(fprintf(fp,"15")!=2){
+        CHILD_ERROR_EXIT(SET_OOM_FAILED);
+    }
+    if(fclose(fp)!=0){
+        CHILD_ERROR_EXIT(SET_OOM_FAILED);
+    }
+
     // set gid
     gid_t group_list[] = {_config->gid};
     if (_config->gid != -1 && (setgid(_config->gid) == -1 || setgroups(sizeof(group_list) / sizeof(gid_t), group_list) == -1)) {
