@@ -20,10 +20,10 @@ const (
 type Config struct {
 	MaxCPUTime           int      // max cpu time(ms) this process can cost, -1 for unlimited
 	MaxRealTime          int      // max time(ms) this process can run, -1 for unlimited
-	MaxMemory            int32    // max size(byte) of the process' virtual memory (address space), -1 for unlimited
-	MaxStack             int32    // max size(byte) of the process' stack size
+	MaxMemory            int      // max size(byte) of the process' virtual memory (address space), -1 for unlimited
+	MaxStack             int      // max size(byte) of the process' stack size
 	MaxProcessNumber     int      // max number of processes that can be created for the real user id of the calling process, -1 for unlimited
-	MaxOutputSize        int32    // max size(byte) of data this process can output to stdout, stderr and file, -1 for unlimited
+	MaxOutputSize        int      // max size(byte) of data this process can output to stdout, stderr and file, -1 for unlimited
 	MemoryLimitCheckOnly int      // if this value equals 0, we will only check memory usage number, because setrlimit(maxrss) will cause some crash issues
 	ExePath              string   // path of file to run
 	InputPath            string   // redirect content of this file to process's stdin
@@ -54,7 +54,7 @@ const (
 type Result struct {
 	CPUTime  int         // cpu time the process has used
 	RealTime int         // actual running time of the process
-	Memory   int32       // max value of memory used by the process
+	Memory   int         // max value of memory used by the process
 	Signal   int         // signal number
 	ExitCode int         // process's exit code
 	Result   JudgeResult // Judge result
@@ -110,7 +110,7 @@ func (c Config) convertToCStruct() (cc C.struct_config) {
 func (r *Result) convertFromCStruct(cr C.struct_result) {
 	r.CPUTime = int(cr.cpu_time)
 	r.RealTime = int(cr.real_time)
-	r.Memory = int32(cr.memory)
+	r.Memory = int(cr.memory)
 	r.Signal = int(cr.signal)
 	r.ExitCode = int(cr.exit_code)
 	r.Result = JudgeResult(cr.result)
