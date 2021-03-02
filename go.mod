@@ -1,3 +1,3 @@
-module github.com/suntt2019/Judger
+module github.com/EduOJ/judger
 
 go 1.14
