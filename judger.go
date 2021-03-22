@@ -101,7 +101,11 @@ func (c Config) convertToCStruct() (cc C.struct_config) {
 	}
 	cc.env[len(c.Env)] = nil
 	cc.log_path = C.CString(c.LogPath)
-	cc.seccomp_rule_name = C.CString(c.SeccompRuleName)
+	if c.SeccompRuleName != "none" {
+		cc.seccomp_rule_name = C.CString(c.SeccompRuleName)
+	} else {
+		cc.seccomp_rule_name = nil
+	}
 	cc.uid = C.uint(c.Uid)
 	cc.gid = C.uint(c.Gid)
 	return
